@@ -14,3 +14,9 @@ kubectl get crd | grep gatekeeper
 kubectl get validatingwebhookconfigurations | grep gatekeeper
 
 
+kubectl apply -f 00-namespaces.yaml
+kubectl get ns --show-labels | grep splunk
+
+
+
+
