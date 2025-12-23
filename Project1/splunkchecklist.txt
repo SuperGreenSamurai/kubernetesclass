@@ -1,1 +1,197 @@
+Kubernetes Deployment Roadmap Checklist (EKS/GKE)
+Stage 0 — Confirm you’re talking to the right cluster
+
+Goal: prevent “wrong cluster” mistakes.
+
+✅ Checklist
+ kubeconfig updated (EKS/GKE)
+ correct context selected
+ cluster reachable
+
+🔧 Commands
+
+kubectl config get-contexts
+kubectl config current-context
+kubectl cluster-info
+kubectl get nodes
+
+
+Stage 1 — Namespace + baseline labels
+
+Goal: isolate your app and reduce blast radius.
+
+✅ Checklist
+ namespace created
+ standard labels applied (optional but encouraged)
+
+🔧 Commands
+kubectl create namespace <ns>
+kubectl get ns
+kubectl -n <ns> get all
+(If you apply YAML instead:)
+kubectl apply -f namespace.yaml
+kubectl get ns <ns> -o yaml
+
+Stage 2 — Config + Secrets (no hardcoding)
+
+Goal: apps should not require rebuilding images for config changes.
+
+✅ Checklist
+ ConfigMap created
+ Secret created
+ values reviewed (no plaintext secrets committed in git)
+
+🔧 Commands
+kubectl -n <ns> apply -f configmap.yaml
+kubectl -n <ns> apply -f secret.yaml
+
+kubectl -n <ns> get configmap
+kubectl -n <ns> describe configmap <name>
+
+kubectl -n <ns> get secret
+kubectl -n <ns> describe secret <name>
+(Optional: verify secret keys exist without printing values)
+kubectl -n <ns> get secret <name> -o jsonpath='{.data}' | head
+
+Stage 3 — Storage (PVC / StatefulSet volume claims)
+
+Goal: verify persistence exists before the app starts writing.
+
+✅ Checklist
+ PVC created (or volumeClaimTemplates in StatefulSet)
+ PVC is Bound
+ storage size and access mode correct
+
+🔧 Commands
+kubectl -n <ns> get pvc
+kubectl -n <ns> describe pvc <pvc-name>
+If pending:
+kubectl -n <ns> get events --sort-by=.metadata.creationTimestamp | tail -n 30
+
+Stage 4 — Workload apply (Deployment or StatefulSet)
+
+Goal: create pods, verify they start, and confirm they use config + storage.
+
+✅ Checklist
+ workload applied
+ pods reach Running/Ready
+ correct image pulled
+ env vars mounted correctly
+ volumes mounted correctly
+🔧 Commands (Deployment)
+kubectl -n <ns> apply -f deployment.yaml
+kubectl -n <ns> get deploy
+kubectl -n <ns> rollout status deploy/<deploy-name>
+kubectl -n <ns> get pods -o wide
+kubectl -n <ns> describe pod <pod-name>
+kubectl -n <ns> logs <pod-name> --tail=100
+
+🔧 Commands (StatefulSet)
+kubectl -n <ns> apply -f statefulset.yaml
+kubectl -n <ns> get sts
+kubectl -n <ns> rollout status sts/<sts-name>
+kubectl -n <ns> get pods -o wide
+kubectl -n <ns> describe pod <pod-name>
+kubectl -n <ns> logs <pod-name> --tail=100
+
+Stage 5 — Service (internal networking)
+
+Goal: stable service name and port routing to pods.
+
+✅ Checklist
+ Service created
+ Endpoints exist (service points to pods)
+ correct port/targetPort
+
+🔧 Commands
+kubectl -n <ns> apply -f service.yaml
+kubectl -n <ns> get svc
+kubectl -n <ns> describe svc <svc-name>
+kubectl -n <ns> get endpoints <svc-name>
+
+Quick connectivity test (inside cluster):
+kubectl -n <ns> run tmp-shell --rm -it --image=curlimages/curl -- sh
+# inside:
+curl -v http://<svc-name>:<port>/
+
+Stage 6 — Ingress (NGINX)
+
+Goal: external routing (host/path) to Service.
+
+✅ Checklist
+ ingress applied
+ correct ingress class
+ external address assigned
+ routes point to the right Service/port
+
+🔧 Commands
+kubectl -n <ns> apply -f ingress.yaml
+kubectl -n <ns> get ingress
+kubectl -n <ns> describe ingress <ingress-name>
+
+Troubleshoot:
+kubectl -n <ns> get events --sort-by=.metadata.creationTimestamp | tail -n 30
+kubectl -n ingress-nginx get pods
+kubectl -n ingress-nginx logs deploy/ingress-nginx-controller --tail=200
+
+Stage 7 — TLS with cert-manager
+
+Goal: valid certificate issued and attached to ingress.
+
+✅ Checklist
+ ClusterIssuer exists
+ Certificate created
+ TLS secret created (Ready=True)
+ HTTPS works
+
+🔧 Commands
+kubectl get clusterissuer
+kubectl -n <ns> get certificate
+kubectl -n <ns> describe certificate <cert-name>
+kubectl -n <ns> get secret <tls-secret-name>
+kubectl -n <ns> describe ingress <ingress-name>
+If stuck:
+kubectl -n cert-manager get pods
+kubectl -n cert-manager logs deploy/cert-manager --tail=200
+kubectl -n <ns> get challenges,orders
+
+Stage 8 — Health checks + rollout discipline
+
+Goal: safe updates and predictable behavior.
+
+✅ Checklist
+ readinessProbe
+ livenessProbe
+ (optional) startupProbe
+ rolling update works (or recreate for stateful)
+ rollback known
+
+🔧 Commands
+kubectl -n <ns> describe pod <pod-name>
+kubectl -n <ns> rollout history deploy/<deploy-name>
+kubectl -n <ns> rollout undo deploy/<deploy-name> --to-revision=<n>
+
+Stage 9 — Observability basics
+
+Goal: students can debug without guessing.
+
+✅ Checklist
+ know how to view logs
+ know how to exec into pod
+ know how to view events
+
+🔧 Commands
+kubectl -n <ns> logs <pod-name> --tail=200
+kubectl -n <ns> logs -l app=<label> --tail=200
+kubectl -n <ns> exec -it <pod-name> -- sh
+kubectl -n <ns> get events --sort-by=.metadata.creationTimestamp
+
+“Stop and Fix” Rule (print this)
+Do not proceed if any of these are true:
+Pods are not Ready
+PVC is not Bound
+Service has no Endpoints
+Ingress has no Address
+Certificate is not Ready
+This is how real teams avoid disasters.
 
