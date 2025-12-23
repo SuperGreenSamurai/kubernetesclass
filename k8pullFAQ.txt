@@ -112,12 +112,45 @@ Does that identity have permission?
 If you skip these questions, you will waste time.
 
 
+Q11: Does kubectl apply pull the image?
+No.
+
 kubectl apply:
-
 sends YAML to the API server
-
 does not touch images
-
 does not validate registry access
 
 Image pulling happens later, on the node.
+
+
+Q12: What’s the fastest way to prove it’s a permission issue?
+Look for these messages in describe pod:
+
+pull access denied
+unauthorized
+no basic auth credentials
+
+Those messages mean:
+“The registry rejected the node’s identity.”
+
+Q13: Can I test image pulling from a node directly?
+Conceptually yes (not always practically in managed clusters).
+If you could SSH into the node:
+
+docker pull <image>
+
+If that fails there, Kubernetes will fail too.
+
+Q14: Why does Kubernetes not tell me “permission denied” clearly?
+Because Kubernetes doesn’t own registry auth.
+
+The error comes from:
+Docker
+containerd
+the registry itself
+
+Kubernetes just reports what it hears.
+
+Q15: What is the single most important thing to remember?
+Nodes pull images, using an identity.
+If you remember nothing else, remember that.
