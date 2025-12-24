@@ -1,0 +1,28 @@
+# clusters/dev/splunk/statefulset.yaml
+
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: splunk
+  namespace: splunk-dev
+spec:
+  serviceName: splunk
+  replicas: 1
+  selector:
+    matchLabels:
+      app: splunk
+  template:
+    metadata:
+      labels:
+        app: splunk
+    spec:
+      containers:
+        - name: splunk
+          # Replace this image with your real Splunk image when ready
+          image: nginx:1.25
+          ports:
+            - containerPort: 8091
+              name: web
+
+
