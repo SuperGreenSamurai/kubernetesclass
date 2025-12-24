@@ -65,6 +65,10 @@ kubectl apply -f myrepo.yaml
 Then
 kubectl apply -f kustomization.yaml
 
+Now: Put Splunk manifests in Git (Flux will deploy them)
+Inside: clusters/dev/splunk/
+
+namespace.yaml
 
 
 
