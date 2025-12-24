@@ -1,3 +1,11 @@
+What students should learn (say this out loud)
+  1) GitRepository = “Flux, watch this repo”
+  2) Kustomization = “Apply this folder continuously”
+  3) prune=true = “If it’s removed from Git, remove it from cluster”
+  4) Flux is a reconciler: cluster drift gets corrected back to Git state
+
+
+
 
 “Day 1 Flux → Splunk” lab with:
 
@@ -49,4 +57,32 @@ In your GitHub repo, add:
 3) clusters/dev/splunk/service.yaml
 
 (Expose Splunk Web or mgmt via ClusterIP as a demo. Port here is your choice; you can change later.)
+
+Commit + push:
+
+git add clusters/dev/splunk
+git commit -m "Add Flux-managed splunk-dev skeleton"
+git push
+
+
+Part 5 — Force reconciliation (optional “make it happen now”)
+flux reconcile source git github-platform -n flux-system
+flux reconcile kustomization splunk-dev -n flux-system --with-source
+
+Verify:
+kubectl get ns | grep splunk-dev
+kubectl -n splunk-dev get pods,svc
+
+Debug section (required for the exam)
+If Flux can’t fetch GitHub
+
+kubectl -n flux-system logs deploy/source-controller --tail=200
+kubectl -n flux-system describe gitrepository github-platform
+
+If Flux fetches but won’t apply
+kubectl -n flux-system logs deploy/kustomize-controller --tail=200
+kubectl -n flux-system describe kustomization splunk-dev
+
+
+
 
