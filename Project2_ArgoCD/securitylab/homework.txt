@@ -1,0 +1,4 @@
+kubectl -n argocd get appprojects
+kubectl -n argocd describe appproject splunk-prod
+kubectl -n argocd get applications
+kubectl -n argocd describe application splunk-prod
