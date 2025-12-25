@@ -163,3 +163,36 @@ clusters/dev/splunk/
 Update your kustomization.yaml to include them.
 
 clusters/dev/splunk/kustomization.yaml
+
+
+Lab mode (recommended first): Self-signed TLS
+issuer.yaml (SelfSigned ClusterIssuer)
+
+ingress.yaml (TLS enabled)
+Replace splunk-dev.example.com with your domain (or a fake domain for local testing).
+
+What happens:
+
+cert-manager generates a self-signed cert
+
+stores it in Secret splunk-web-tls
+
+NGINX terminates TLS and forwards to Splunk service
+
+✅ Works even with no public DNS.
+(You may need to add an /etc/hosts entry to test locally.)
+
+B) Real-world mode: Let’s Encrypt (HTTP-01)
+
+Use this only if:
+  your Ingress gets a public IP/hostname
+  DNS for your host points to it
+  port 80/443 are reachable from the internet
+
+public_ip_issuer.yaml (Let’s Encrypt staging — recommended first)
+public_ip_ingress.yaml (Let’s Encrypt TLS)
+
+Once staging works, swap to production issuer:
+Production issuer (same but different server URL)
+
+
